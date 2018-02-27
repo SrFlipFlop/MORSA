@@ -6,23 +6,34 @@ from scrapy.crawler import CrawlerRunner
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
 
+files = {}
+
 class MySpider(scrapy.spiders.CrawlSpider):
 	name = 'example.com'
 	#allowed_domains = ['trelis24.github.io']
-	start_urls = ['https://www.nicklevine.org/']
+	start_urls = ['https://www.nicklevine.org/els2013']
 	rules = (
         # Extract links matching 'category.php' (but not matching 'subsection.php')
         # and follow links from them (since no callback means follow=True by default).
 		#Rule(LinkExtractor(allow=('/', ), deny=('subsection\.php', ))),
         # Extract links matching 'item.php' and parse them with the spider's method parse_item
-		Rule(LinkExtractor(allow=('/els2013', )), callback='parse_item'),
+		Rule(LinkExtractor(allow=('/', )), callback='parse_item'),
     )
 
+	# Return a dictionary with files URLs
 	def parse_item(self, response):
-		self.logger.info('Hiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii, this is an item page! %s', response.url)
+		global files
 		for href in response.xpath('//a/@href'):
-			print href.extract()
-
+			url = href.extract()
+			file = open('file_extensions.txt')
+			for ext in file:
+				if url.split('.')[-1] in ext:
+					if ext in files: 
+						files[ext].append(url)
+					else:
+						files[ext] = [url]
+					break
+		print files
 
 	def save_file(self, response):
 		path = response.url.split('/')[-1]
@@ -30,16 +41,6 @@ class MySpider(scrapy.spiders.CrawlSpider):
 		with open(path, 'wb') as f:
 			f.write(response.body)
 
-	# This method must return an iterable with the first Requests to crawl for this spider. It is called by Scrapy when the spider is opened for scraping. Scrapy calls it only once, so it is safe to implement start_requests() as a generator.
-	'''def start_requests(self):
-		logging.info("Start request")
-		yield scrapy.Request('https://trelis24.github.io/', self.parse)
-
-	# This is the default callback used by Scrapy to process downloaded responses, when their requests do not specify a callback.
-	def parse(self, response):
-		logging.info("Start parse")
-		
-		logging.info('A response from %s just arrived!', response.url)'''
 
 	def log(self,verbose):
 		configure_logging(install_root_handler=verbose)
