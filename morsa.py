@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function, unicode_literals
+from os import listdir
 from subprocess import Popen, PIPE
 from prompt_toolkit import prompt
 from prompt_toolkit.token import Token
@@ -8,9 +9,6 @@ from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.history import InMemoryHistory, FileHistory
 
 PROJECT_OPTIONS = ['exit', 'help', 'use', 'create', 'open', 'info', 'sethistory', 'setname', 'setpath']
-
-def print_help():
-    print('TODO!')
 
 def print_logo():
     process = Popen(['stty', 'size'], stdout=PIPE, stderr=PIPE)
@@ -68,13 +66,26 @@ def print_logo():
     else:
         print("Welcome to MORSA!")
 
+def load_modules():
+    load_modules = {}
+    files = filter(lambda x: not x.startswith('__') and not x.endswith('pyc'), listdir('modules/'))
+    modules = map(lambda x: x.replace('.py',''), files)
+    for m in modules:
+        x = __import__('modules.{0}'.format(m), fromlist=[m.title()])
+        load_modules[m] = getattr(x, m.title())()
+    
+    return load_modules
+
+def print_help():
+    print('TODO!')
+
 def update_toolbar(cli, title='Temporal project [/tmp/morsa/]'):
     return [(Token.Toolbar, title)]
 
 def main():
     print_logo()
 
-    #TODO: load all modules
+    modules = load_modules()
     
     #Temporal project variables
     history = InMemoryHistory()    
@@ -106,7 +117,12 @@ def main():
 
         elif 'use' in user_input:
             module = user_input.split(' ')[1]
-            #TODO: send input to the module
+            if not module in modules:
+                print('[-] Module "{0}" not found.'.format(module))
+                continue
+            
+            module_class = modules[module]
+            module_instance = module_class()
         
         else:
             print('[-] Option "{0}" not found. Please use "help" to see the correct options.'.format(user_input))
