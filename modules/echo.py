@@ -1,58 +1,42 @@
 #https://pymotw.com/2/multiprocessing/basics.html
 #https://docs.python.org/2/library/multiprocessing.html
+#https://noswap.com/blog/python-multiprocessing-keyboardinterrupt
+#http://cuyu.github.io/python/2016/08/15/Terminate-multiprocess-in-Python-correctly-and-gracefully
 
 from time import sleep
-from os import getppid, getpid
+from datetime import datetime 
 from multiprocessing import Process
 
-PROCESS = None
-
-def worker(arg):
-    while True:
-        print("Echo: {0}".format(arg))
-        sleep(1)
-
-def start(process):
-    process.start()
-
-def kill(process):
-    process.terminate()
-
-def create(arg1):
-    global PROCESS
-    PROCESS = Process(target=worker, args=(arg1,))
-
-MODULE_OPTIONS = {
-    'create': create,
-    'start': start,
-    'kill': kill    
-}
-
-#MODULE_OPTIONS['create'](1)
-#print('Created')
-#MODULE_OPTIONS['start'](PROCESS)
-#print('Time to sleep')
-#sleep(5)
-#print('Kill')
-#MODULE_OPTIONS['kill'](PROCESS)
-#print('End')
-
 class EchoModule:
-    def __init__(self, arg1=1):
-        self.process = Process(target=self.worker, args=(arg1,))
+    def __init__(self):
+        self.jobs = {}
     
-    def start(self):
-        self.process.start()
+    def create(self, job):
+        process = Process(target=self.worker, args=(job,))
+        key = len(self.jobs.keys())
+        self.jobs[key] = {
+            'info': job,
+            'process': process,
+            'start': datetime.now().strftime('%d-%M-%Y %H:%m:%S'),
+            'status': 'Planned',
+        }
 
-    def kill(self):
-        self.process.terminate()
+    def start(self, job):
+        self.jobs[job]['process'].start()
+        self.jobs[job]['status'] = 'Running'
 
-    def worker(self):
+    def kill(self, job):
+        self.jobs[job]['process'].terminate()
+        self.jobs[job]['status'] = 'Finished'
+
+    def kill_all(self):
+        for job in self.jobs:
+            self.kill(job)
+
+    def get_jobs(self):
+        return self.jobs
+
+    def worker(self, arg):
         while True:
             print("Echo: {0}".format(arg))
             sleep(1)
-
-m = EchoModule(1)
-m.start()
-sleep(5)
-m.kill()
