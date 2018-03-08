@@ -8,7 +8,7 @@ from prompt_toolkit.contrib.completers import WordCompleter
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.history import InMemoryHistory, FileHistory
 
-PROJECT_OPTIONS = ['exit', 'help', 'use', 'create', 'open', 'info', 'sethistory', 'setname', 'setpath']
+PROJECT_OPTIONS = ['exit', 'help', 'use', 'createProject', 'openProject', 'showInfo', 'setHistory', 'setName', 'setPath']
 
 def print_logo():
     process = Popen(['stty', 'size'], stdout=PIPE, stderr=PIPE)
@@ -103,29 +103,52 @@ def main():
             completer=words,
             history=history
         )
-        
-        if user_input == 'help':
-            print_help()
 
-        elif user_input == 'exit':
-            end = True
-        
-        elif 'sethistory' in user_input:
-            path = user_input.split(' ')[2]
-            print('[+] New history file: {0}'.format(path))
-            history = FileHistory(path)
+        if not module: #Base        
+            if user_input == 'help':
+                print_help()
 
-        elif 'use' in user_input:
-            module = user_input.split(' ')[1]
-            if not module in modules:
-                print('[-] Module "{0}" not found.'.format(module))
-                continue
+            elif user_input == 'exit':
+                end = True           
+
+            elif 'use' in user_input:
+                module = user_input.split(' ')[1]
+                if not module in modules:
+                    module = None
+                    print('[-] Module "{0}" not found.'.format(module))
+                else:
+                    words = WordCompleter(modules[module].words, ignore_case=True)
             
-            module_class = modules[module]
-            module_instance = module_class()
-        
+            elif 'createProject' in user_input: #TODO
+                pass
+
+            elif 'openProject' in user_input: #TODO
+                pass
+
+            elif 'showInfo' in user_input: #TODO
+                pass
+
+            elif 'setHistory' in user_input:
+                path = user_input.split(' ')[2]
+                history = FileHistory(path)
+                print('[+] New history file: {0}'.format(path))
+
+            elif 'setName' in user_input: #TODO
+                pass
+
+            elif 'setPath' in user_input: #TODO
+                pass
+
+            else:
+                print('[-] Option "{0}" not found. Please use "help" to see the correct options.'.format(user_input))
+
         else:
-            print('[-] Option "{0}" not found. Please use "help" to see the correct options.'.format(user_input))
+            if user_input == 'back':
+                module = None
+                words = WordCompleter(PROJECT_OPTIONS, ignore_case=True)
+            
+            else:
+                modules[module].run(user_input)
 
 if __name__ == '__main__':
     main()
