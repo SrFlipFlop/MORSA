@@ -42,7 +42,7 @@ def crawl (host):
 	domain = host.split('//')[1]
 
 	queue['working'].append(host)
-	print "Working: " + host
+	#print "Working: " + host
 	if check_depth(host):
 		r = requests.get(host)
 		if check_if_file(r):
@@ -54,7 +54,7 @@ def crawl (host):
 				add_to_queue(domain,url,r)
 	queue['working'].remove(host)
 	queue['done'].append(host)
-	print "Done: " + host
+	#print "Done: " + host
 
 # Pre: user depth and URL
 # Post: -
@@ -110,7 +110,7 @@ TODO
 https://docs.scrapy.org/en/latest/topics/spiders.html#scrapy.spiders.Spider
 
 [] Blacklist
-[] How deep
+[x] How deep
 [] Hosts from file
 [] Multi threading
 '''
