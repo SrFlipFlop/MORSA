@@ -16,17 +16,20 @@ class Echo:
         if user_input == 'help':
             self.print_help()
         
-        elif user_input == 'run':
+        elif 'run' in user_input:
             arg = user_input.split(' ')[1]
-            self.start(arg)
+            self.start(int(arg))
 
-        elif user_input == 'kill':
+        elif 'kill' in user_input:
             arg = user_input.split(' ')[1]
-            self.kill(arg)
+            self.kill(int(arg))
 
-        elif user_input == 'killAll':
+        elif 'killAll' in user_input:
             for job in self.jobs:
                 self.kill(job)
+
+        elif 'showInfo' in user_input:
+            self.show_info()
 
         else:
             print('[-] Option "{0}" not found. Please use "help" to see the correct options.'.format(user_input))
@@ -39,7 +42,7 @@ class Echo:
         process = Process(target=self.worker, args=(arg,))
         key = len(self.jobs.keys())
         self.jobs[key] = {
-            'info': job,
+            'info': arg,
             'process': process,
             'start': datetime.now().strftime('%d-%M-%Y %H:%m:%S'),
             'status': 'Running',
@@ -52,11 +55,11 @@ class Echo:
         self.jobs[job]['status'] = 'Finished'  
 
     def show_info(self):
-        print('[+] Running jobs:')
+        print('[+] Jobs:')
         for key, job in self.jobs.iteritems():
             print('\tID: {0} | Start time: {1} | Status: {2}'.format(key, job['start'], job['status']))
 
     def worker(self, arg):
         while True:
-            print("Echo: {0}".format(arg))
+            #print("Echo: {0}".format(arg))
             sleep(1)
