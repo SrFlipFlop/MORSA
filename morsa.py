@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function, unicode_literals
-from os import listdir
+from json import dump, load
+from os.path import join
+from os import listdir, makedirs
 from subprocess import Popen, PIPE
 from prompt_toolkit import prompt
 from prompt_toolkit.token import Token
@@ -8,7 +10,24 @@ from prompt_toolkit.contrib.completers import WordCompleter
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.history import InMemoryHistory, FileHistory
 
-PROJECT_OPTIONS = ['exit', 'help', 'use', 'createProject', 'openProject', 'showInfo', 'setHistory', 'setName', 'setPath']
+PROJECT_OPTIONS = ['exit', 'help', 'use', 'createProject', 'openProject', 'showInfo', 'showModules']
+PROJECT_PATH = 'Temporal project [/tmp/morsa/]'
+
+def load_modules():
+    load_modules = {}
+    files = filter(lambda x: not x.startswith('__') and not x.endswith('pyc'), listdir('modules/'))
+    modules = map(lambda x: x.replace('.py',''), files)
+    for m in modules:
+        try:
+            x = __import__('modules.{0}'.format(m), fromlist=[m.title()])
+            load_modules[m] = getattr(x, m.title())()
+        except:
+            print('[-] Error loading module {0}'.format(m))
+    
+    return load_modules
+
+def update_toolbar(cli):
+    return [(Token.Toolbar, PROJECT_PATH)]
 
 def print_logo():
     process = Popen(['stty', 'size'], stdout=PIPE, stderr=PIPE)
@@ -66,21 +85,44 @@ def print_logo():
     else:
         print("Welcome to MORSA!")
 
-def load_modules():
-    load_modules = {}
-    files = filter(lambda x: not x.startswith('__') and not x.endswith('pyc'), listdir('modules/'))
-    modules = map(lambda x: x.replace('.py',''), files)
-    for m in modules:
-        x = __import__('modules.{0}'.format(m), fromlist=[m.title()])
-        load_modules[m] = getattr(x, m.title())()
-    
-    return load_modules
-
 def print_help():
-    print('TODO!')
+    print("""[?] MORSA commands:
+    \thelp          - Print help message
+    \texit          - Close MORSA
+    \tuse           - Change the context to another module [use <module name>]
+    \topenProject   - Open an existing MORSA project [openProject <project path>]
+    \tcreateProject - Create a new project [createProject <project name> <project path>]
+    \tshowInfo      - Show information from the current project
+    \tshowModules   - Show all available modules
+    \tsetHistory    - Add history file [setHistory <history path>]
+    \tsetName       - Change project name [setName <project name>]
+    \tsetPrath      - Change project paht [setPath <project path>]
+    """)
 
-def update_toolbar(cli, title='Temporal project [/tmp/morsa/]'):
-    return [(Token.Toolbar, title)]
+def create_project(name, path):    
+    config = {
+        'name': name,
+        'project_path': path,
+        'config_path': join(path, '{0}.config'.format(name)),
+        'history_path': join(path, '{0}.history'.format(name)),
+    }
+
+    makedirs(path)
+    with open(config['config_path'], 'w') as config_file:
+        dump(config, config_file)
+
+    global PROJECT_PATH
+    PROJECT_PATH = "{0} [{1}]".format(name, path)   
+    history = FileHistory(config['history_path']) 
+
+    return (config, history)
+    
+def open_project(path):
+    config_file = filter(lambda x: x.endswith('.config'), listdir(path))[0]
+    config = load(join(path, config_file))
+
+    global PROJECT_PATH
+    PROJECT_PATH = "{0} [{1}]".format(config['name'], path)
 
 def main():
     print_logo()
@@ -89,9 +131,10 @@ def main():
     
     #Temporal project variables
     history = InMemoryHistory()    
-    suggest = AutoSuggestFromHistory()    
+    suggest = AutoSuggestFromHistory()
+    config = {}
 
-    words = WordCompleter(PROJECT_OPTIONS, ignore_case=True)
+    words = WordCompleter(PROJECT_OPTIONS, ignore_case=True, WORD=True)
 
     module = None
     end = False
@@ -119,25 +162,22 @@ def main():
                 else:
                     words = WordCompleter(modules[module].words, ignore_case=True)
             
-            elif 'createProject' in user_input: #TODO
-                pass
+            elif 'createProject' in user_input:
+                config, history = create_project(*user_input.split(' '))
 
-            elif 'openProject' in user_input: #TODO
-                pass
+            elif 'openProject' in user_input:
+                open_project(*user_input.split(' '))
 
             elif 'showInfo' in user_input: #TODO
-                pass
+                #Print project info
+                print('[+] Modules jobs:')
+                for m in modules:
+                    modules[m].show_info()
 
-            elif 'setHistory' in user_input:
-                path = user_input.split(' ')[2]
-                history = FileHistory(path)
-                print('[+] New history file: {0}'.format(path))
-
-            elif 'setName' in user_input: #TODO
-                pass
-
-            elif 'setPath' in user_input: #TODO
-                pass
+            elif 'showModules' in user_input:
+                print("[+] Available modules:")
+                for m in modules:
+                    print("\t{0}".format(m))
 
             else:
                 print('[-] Option "{0}" not found. Please use "help" to see the correct options.'.format(user_input))
