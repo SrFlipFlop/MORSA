@@ -16,30 +16,44 @@ class Echo:
         if user_input == 'help':
             self.print_help()
         
-        elif user_input == 'run':
-            arg = user_input.split(' ')[1]
-            self.start(arg)
+        elif 'run' in user_input:
+            arg = user_input.split(' ')
+            if len(arg) > 1:
+                self.start(arg[1])
+            else:
+                print('[-] Option "run" need one argument')
 
-        elif user_input == 'kill':
-            arg = user_input.split(' ')[1]
-            self.kill(arg)
+        elif 'kill' in user_input:
+            arg = user_input.split(' ')
+            if len(arg) > 1:
+                self.kill(int(arg[1]))
+            else:
+                print('[-] Option "kill" need one argument')
 
-        elif user_input == 'killAll':
+        elif 'killAll' in user_input:
             for job in self.jobs:
                 self.kill(job)
+
+        elif 'showInfo' in user_input:
+            self.show_info()
 
         else:
             print('[-] Option "{0}" not found. Please use "help" to see the correct options.'.format(user_input))
 
     def print_help(self):
-        #TODO: print help
-        pass
+        print("""[?] Module Echo commands:
+        \thelp          - Print help message
+        \trun           - Execute Echo job [run <info>]
+        \tkill          - Kill Echo job [kill <job id>]
+        \tkillAll       - Kill all Echo jobs
+        \tshowInfo      - Show Echo jobs
+        """)
 
     def start(self, arg):
         process = Process(target=self.worker, args=(arg,))
         key = len(self.jobs.keys())
         self.jobs[key] = {
-            'info': job,
+            'info': arg,
             'process': process,
             'start': datetime.now().strftime('%d-%M-%Y %H:%m:%S'),
             'status': 'Running',
@@ -52,11 +66,10 @@ class Echo:
         self.jobs[job]['status'] = 'Finished'  
 
     def show_info(self):
-        print('[+] Running jobs:')
+        print('[+] Echo jobs:')
         for key, job in self.jobs.iteritems():
             print('\tID: {0} | Start time: {1} | Status: {2}'.format(key, job['start'], job['status']))
 
     def worker(self, arg):
         while True:
-            print("Echo: {0}".format(arg))
             sleep(1)
